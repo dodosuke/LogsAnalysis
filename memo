@@ -1,0 +1,75 @@
+#what are the most popular three articles of all time
+
+select articles.title, count(*) as num
+from log, articles
+where log.status='200 OK'
+and substr(log.path, 10) = articles.slug
+group by articles.title
+order by num desc
+limit 3;
+
+#Who are the most popular article authors of all time?
+
+select authors.name, count(*) as num
+from log, articles, authors
+where log.status='200 OK'
+and substr(log.path, 10) = articles.slug
+and articles.author = authors.id
+group by authors.name
+order by num desc;
+
+#On which days did more than 1% of requests lead to errors?
+select to_char(date_trunc('day', time), 'Mon DD, YYYY') as day,
+    concat(round(count(status='404 NOT FOUND' or null)*100.0/count(*), 2), '%') as error
+from log
+group by day
+having count(status='404 NOT FOUND' or null)*100.0/count(*) > 1;
+
+<Articles>
+Column |           Type           |                       Modifiers
+--------+--------------------------+-------------------------------------------------------
+ author | integer                  | not null
+ title  | text                     | not null
+ slug   | text                     | not null
+ lead   | text                     |
+ body   | text                     |
+ time   | timestamp with time zone | default now()
+ id     | integer                  | not null default nextval('articles_id_seq'::regclass)
+Indexes:
+    "articles_pkey" PRIMARY KEY, btree (id)
+    "articles_slug_key" UNIQUE CONSTRAINT, btree (slug)
+Foreign-key constraints:
+    "articles_author_fkey" FOREIGN KEY (author) REFERENCES authors(id)
+
+
+    bad-things-gone
+    balloon-goons-doomed
+    bears-love-berries
+    candidate-is-jerk
+    goats-eat-googles
+    media-obsessed-with-bears
+    trouble-for-troubled
+    so-many-bears
+
+
+
+<authors>
+Column |  Type   |                      Modifiers
+--------+---------+------------------------------------------------------
+name   | text    | not null
+bio    | text    |
+id     | integer | not null default nextval('authors_id_seq'::regclass)
+Indexes:     "authors_pkey" PRIMARY KEY, btree (id)
+Referenced by: TABLE "articles" CONSTRAINT "articles_author_fkey" FOREIGN KEY (author) REFERENCES authors(id)
+
+<log>
+ Column |           Type           |                    Modifiers
+--------+--------------------------+--------------------------------------------------
+ path   | text                     |
+ ip     | inet                     |
+ method | text                     | GET
+ status | text                     | 200 OK or 404 NOT FOUND
+ time   | timestamp with time zone | default now()
+ id     | integer                  | not null default nextval('log_id_seq'::regclass)
+Indexes:
+          "log_pkey" PRIMARY KEY, btree (id)
